@@ -6,17 +6,16 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A multithreaded web crawler that collects all unique links from a given website.
- * It uses an ExecutorService with a CachedThreadPool to handle concurrency.
+ * A multithreaded web crawler using Virtual Threads.
  */
 public class Main {
 
@@ -24,11 +23,6 @@ public class Main {
     private final PageFetcher pageFetcher;
     private static final boolean debugMode = Boolean.getBoolean("debug");
 
-    /**
-     * Main entry point for the crawler.
-     *
-     * @param args Command line arguments, expects a URL as the first argument.
-     */
     public static void main(String[] args) {
         if (args.length == 0) {
             System.out.println("Usage: java Main <url>");
@@ -47,21 +41,10 @@ public class Main {
         System.out.println("Crawling finished in " + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
     }
 
-    /**
-     * Initializes the crawler with a given PageFetcher implementation.
-     *
-     * @param pageFetcher The page fetcher used to retrieve page content.
-     */
     public Main(PageFetcher pageFetcher) {
         this.pageFetcher = pageFetcher;
     }
 
-    /**
-     * Recursively collects all links starting from the given website.
-     *
-     * @param webSite The starting URL.
-     * @return A set of unique links collected from the site.
-     */
     protected Set<String> collectLinks(String webSite) {
         URI baseUri = URI.create(webSite);
 
@@ -71,16 +54,10 @@ public class Main {
         return visitedLinks;
     }
 
-    /**
-     * Interface for fetching page content.
-     */
     interface PageFetcher {
         String fetchPageContent(String url) throws Exception;
     }
 
-    /**
-     * Default implementation of the PageFetcher that retrieves content from a URL.
-     */
     static class DefaultPageFetcher implements PageFetcher {
         @Override
         public String fetchPageContent(String url) throws Exception {
@@ -99,29 +76,21 @@ public class Main {
         }
     }
 
-    /**
-     * Recursively crawls a page, extracts links, and submits new pages to the executor.
-     *
-     * @param baseUrl      The base URL for the website.
-     * @param url          The current page URL being crawled.
-     * @param visitedLinks A set of already visited links to avoid cycles.
-     * @return A set of newly discovered links from the current page.
-     */
     private Set<String> collectLinks(String baseUrl, String url, Set<String> visitedLinks) {
         Set<String> localVisitedLinks = new HashSet<>();
         try {
             String content = pageFetcher.fetchPageContent(url);
             Set<String> links = extractLinks(baseUrl, content);
-            List<Future<Set<String>>> futures = new ArrayList<>();
+            List<CompletableFuture<Set<String>>> futures = new ArrayList<>();
 
             for (String link : links) {
                 if (visitedLinks.add(link)) {
                     localVisitedLinks.add(link);
-                    futures.add(executor.submit(() -> collectLinks(baseUrl, link, visitedLinks)));
+                    futures.add(CompletableFuture.supplyAsync(() -> collectLinks(baseUrl, link, visitedLinks), executor));
                 }
             }
 
-            for (Future<Set<String>> future : futures) {
+            for (CompletableFuture<Set<String>> future : futures) {
                 try {
                     visitedLinks.addAll(future.get(10, TimeUnit.SECONDS));
                 } catch (Exception e) {
@@ -134,13 +103,6 @@ public class Main {
         return localVisitedLinks;
     }
 
-    /**
-     * Extracts all valid hyperlinks from the HTML content.
-     *
-     * @param domain  The base URL to ensure links belong to the same domain.
-     * @param content The HTML content to extract links from.
-     * @return A set of unique links found in the content.
-     */
     private Set<String> extractLinks(String domain, String content) {
         Set<String> links = new HashSet<>();
         Pattern pattern = Pattern.compile("<a\\s+[^>]*?href=\"(https?://[^\"]+)\"", Pattern.CASE_INSENSITIVE);
@@ -154,9 +116,6 @@ public class Main {
         return links;
     }
 
-    /**
-     * Shuts down the executor service gracefully, waiting for tasks to complete.
-     */
     private void shutdownExecutor() {
         try {
             executor.shutdown();
@@ -169,4 +128,3 @@ public class Main {
         }
     }
 }
-
