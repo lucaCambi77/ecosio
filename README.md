@@ -11,7 +11,7 @@ This is a multithreaded web crawler designed to collect all unique links from a 
 
 ## Requirements
 
-- Java 11 or higher. From Java 21 on there is a significant improvement in performance
+- Java 17 or higher. From Java 21 on there is a significant improvement in performance
 - Gradle (optional if using a build tool).
 
 ## Build and Run the Application
@@ -59,11 +59,11 @@ https://example.com/page2
 Crawling finished in 25.3 seconds
 ```
 
-### Debug example
+### Debug option
 
 You can enable debug mode by passing the debug system property:
 
 ```bash
 java -Ddebug=true https://example.com
 ```
-This will provide additional logging for each fetched page, showing the time taken for each request and errors, such read time out, page not found, etc
+This will provide additional logging for each fetched page, showing the time taken for each request. This will also track errors, such read time out, page not found, etc
