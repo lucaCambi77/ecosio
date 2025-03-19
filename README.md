@@ -1,6 +1,6 @@
 # Web Crawler - Multithreaded Link Collector
 
-This is a multithreaded web crawler designed to collect all unique links from a given website. It uses Java's `ExecutorService` with a work-stealing pool to handle concurrency. The application fetches pages and extracts links recursively, ensuring no link is visited more than once.
+This is a multithreaded web crawler designed to collect all unique links from a given website. It uses Java's `ExecutorService` with a `CachedThreadPool` to handle concurrency. The application fetches pages and extracts links recursively, ensuring no link is visited more than once.
 
 ## Main Features
 - **Multithreaded Crawling**: Uses an `ExecutorService` to crawl pages concurrently.
