@@ -93,9 +93,7 @@ public class Main {
             connection.setRequestProperty("User-Agent", "Mozilla/5.0");
 
             try (InputStream inputStream = connection.getInputStream()) {
-                if (debugMode) {
-                    System.out.println("Fetched " + url + " in " + (System.currentTimeMillis() - start) + " ms");
-                }
+                if (debugMode) System.out.println("Fetched " + url + " in " + (System.currentTimeMillis() - start) + " ms");
                 return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
             }
         }
