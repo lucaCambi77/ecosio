@@ -16,11 +16,11 @@ import java.util.regex.Pattern;
 
 /**
  * A multithreaded web crawler that collects all unique links from a given website.
- * It uses an ExecutorService with a work-stealing pool to handle concurrency.
+ * It uses an ExecutorService with a CachedThreadPool to handle concurrency.
  */
 public class Main {
 
-    private final ExecutorService executor = Executors.newWorkStealingPool();
+    private final ExecutorService executor = Executors.newCachedThreadPool();
     private final PageFetcher pageFetcher;
     private static final boolean debugMode = Boolean.getBoolean("debug");
 
