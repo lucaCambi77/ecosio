@@ -64,6 +64,6 @@ Crawling finished in 25.3 seconds
 You can enable debug mode by passing the debug system property:
 
 ```bash
-java -Ddebug=true https://example.com
+java -Ddebug=true Main https://example.com
 ```
 This will provide additional logging for each fetched page, showing the time taken for each request. This will also track errors, such read time out, page not found, etc
