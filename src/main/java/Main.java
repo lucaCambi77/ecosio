@@ -1,7 +1,11 @@
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -52,22 +56,59 @@ public class Main {
     }
 
     static class DefaultPageFetcher implements PageFetcher {
+        private static final int MAX_RETRIES = 5;
+        private static final int CONNECT_TIMEOUT_MS = 5000;
+        private static final int READ_TIMEOUT_MS = 5000;
+
         @Override
         public String fetchPageContent(String url) throws Exception {
-            long start = System.currentTimeMillis();
+            StringBuilder content = new StringBuilder();
 
-            HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+            for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+                    connection.setReadTimeout(READ_TIMEOUT_MS);
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0");
 
-            try (InputStream inputStream = connection.getInputStream()) {
-                if (debugMode) System.out.println("Fetched " + url + " in " + (System.currentTimeMillis() - start) + " ms");
-                return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                    long start = System.currentTimeMillis();
+
+                    return bufferInputStream(url, connection, content, start, attempt);
+
+                } catch (SocketTimeoutException e) {
+                    if (debugMode)
+                        System.err.println("Timeout on " + url + ", retrying... (" + attempt + "/" + MAX_RETRIES + ")");
+
+                    if (attempt == MAX_RETRIES) {
+                        throw new Exception("Failed to fetch URL after " + MAX_RETRIES + " attempts: " + url, e);
+                    }
+
+                    Thread.sleep(1000L * (1L << (attempt - 1)));
+                }
+            }
+
+            throw new Exception("Unexpected error fetching: " + url);
+        }
+
+        private String bufferInputStream(String url, HttpURLConnection connection, StringBuilder content, long start, int attempt) throws IOException {
+            try (InputStream inputStream = connection.getInputStream();
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+
+                char[] buffer = new char[8192];
+                int bytesRead;
+                while ((bytesRead = reader.read(buffer)) != -1) {
+                    content.append(buffer, 0, bytesRead);
+                }
+
+                if (debugMode)
+                    System.out.println("Fetched " + url + " in " + (System.currentTimeMillis() - start) + " ms (Attempt " + attempt + ")");
+
+                return content.toString();
             }
         }
     }
+
 
     protected Set<String> collectLinks(String webSite) {
         URI baseUri = URI.create(webSite);
@@ -94,10 +135,9 @@ public class Main {
 
             for (CompletableFuture<Set<String>> future : futures) {
                 try {
-                    visitedLinks.addAll(future.get(10, TimeUnit.SECONDS));
+                    visitedLinks.addAll(future.get(60, TimeUnit.SECONDS));
                 } catch (Exception e) {
                     if (debugMode) System.err.println("Failed to get result for: " + url + "\nException: " + getFullErrorMessage(e));
-
                 }
             }
         } catch (Exception e) {
@@ -128,7 +168,7 @@ public class Main {
     private void shutdownExecutor() {
         try {
             executor.shutdown();
-            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+            if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
                 executor.shutdownNow();
             }
         } catch (InterruptedException e) {
