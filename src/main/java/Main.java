@@ -15,7 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A multithreaded web crawler using Virtual Threads.
+ * A multithreaded web crawler using Cached Thread Pool.
  */
 public class Main {
 
@@ -45,15 +45,6 @@ public class Main {
         this.pageFetcher = pageFetcher;
     }
 
-    protected Set<String> collectLinks(String webSite) {
-        URI baseUri = URI.create(webSite);
-
-        Set<String> visitedLinks = ConcurrentHashMap.newKeySet();
-        collectLinks(baseUri.getHost(), baseUri.toString(), visitedLinks);
-        shutdownExecutor();
-        return visitedLinks;
-    }
-
     interface PageFetcher {
         String fetchPageContent(String url) throws Exception;
     }
@@ -74,6 +65,15 @@ public class Main {
                 return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
             }
         }
+    }
+
+    protected Set<String> collectLinks(String webSite) {
+        URI baseUri = URI.create(webSite);
+
+        Set<String> visitedLinks = ConcurrentHashMap.newKeySet();
+        collectLinks(baseUri.getHost(), baseUri.toString(), visitedLinks);
+        shutdownExecutor();
+        return visitedLinks;
     }
 
     private Set<String> collectLinks(String baseUrl, String url, Set<String> visitedLinks) {

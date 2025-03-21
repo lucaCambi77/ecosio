@@ -12,9 +12,9 @@ class CrawlerTest {
         Main.PageFetcher mockFetcher = url -> """
                 <html>
                 <body>
-                <a class="some_class "href=\"https://example.com/page1\">Page 1</a>
-                <a href=\"https://example.com/page2\">Page 2</a>
-                <a href=\"https://external.com/page3\">External Link</a>
+                <a class="some_class "href="https://example.com/page1">Page 1</a>
+                <a href="https://example.com/page2">Page 2</a>
+                <a href="https://external.com/page3">External Link</a>
                 </body>
                 </html>
                 """;
@@ -73,9 +73,9 @@ class CrawlerTest {
         Main.PageFetcher mockFetcher = url -> """
                 <html>
                 <body>
-                <a href=\"https://orf.at/news\">News</a>
-                <a href=\"https://kids.orf.at/story\">Kids Story</a>
-                <a href=\"https://external.com/page\">External Link</a>
+                <a href="https://orf.at/news">News</a>
+                <a href="https://kids.orf.at/story">Kids Story</a>
+                <a href="https://external.com/page">External Link</a>
                 </body>
                 </html>
                 """;
@@ -89,6 +89,6 @@ class CrawlerTest {
                 "https://kids.orf.at/story"
         );
 
-        assertTrue(res.containsAll(expectedLinks));
+        assertTrue(res.containsAll(expectedLinks), "Crawler should visit subdomains!");
     }
 }
