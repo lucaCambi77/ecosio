@@ -1,4 +1,6 @@
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -94,13 +96,20 @@ public class Main {
                 try {
                     visitedLinks.addAll(future.get(10, TimeUnit.SECONDS));
                 } catch (Exception e) {
-                    if (debugMode) System.err.println("Failed to get result for: " + url);
+                    if (debugMode) System.err.println("Failed to get result for: " + url + "\nException: " + getFullErrorMessage(e));
+
                 }
             }
         } catch (Exception e) {
-            if (debugMode) System.err.println("Failed to crawl: " + url + " with exception : \n" + e.getMessage());
+            if (debugMode) System.err.println("Failed to crawl: " + url + "\nException: " + getFullErrorMessage(e));
         }
         return localVisitedLinks;
+    }
+
+    private String getFullErrorMessage(Throwable e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
 
     private Set<String> extractLinks(String domain, String content) {
