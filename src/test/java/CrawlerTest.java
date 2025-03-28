@@ -91,4 +91,46 @@ class CrawlerTest {
 
         assertTrue(res.containsAll(expectedLinks), "Crawler should visit subdomains!");
     }
+
+    @Test
+    void testCollectLinksExcludesMedia() {
+        Main.PageFetcher mockFetcher = url -> """
+                <html>
+                <body>
+                <a href="https://orf.at/news">News</a>
+                <a href="https://orf.at/media/file.mp3">Mp3 Link</a>
+                <a href="https://orf.at/download/file.jpeg">Download Link</a>
+                <a href="https://gitlab.com">Gitlab Link</a>
+                </body>
+                </html>
+                """;
+
+        Main crawler = new Main(mockFetcher);
+
+        Set<String> res = crawler.collectLinks("https://orf.at");
+
+        Set<String> expectedLinks = Set.of("https://orf.at/news");
+
+        assertEquals(res, expectedLinks, "Crawler should exclude media, git or download!");
+    }
+
+    @Test
+    void testCollectLinksIncludeRelativeUrl() {
+        Main.PageFetcher mockFetcher = url -> """
+                <html>
+                <body>
+                <a href="https://orf.at/news">News</a>
+                <a href="/doc/">External Link</a>
+                </body>
+                </html>
+                """;
+
+        Main crawler = new Main(mockFetcher);
+
+        Set<String> res = crawler.collectLinks("https://orf.at");
+
+        Set<String> expectedLinks = Set.of("https://orf.at/news", "https://orf.at/doc/");
+
+        assertTrue(res.containsAll(expectedLinks), "Crawler should visit relative urls!");
+    }
 }

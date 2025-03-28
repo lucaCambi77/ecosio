@@ -3,6 +3,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -82,7 +83,7 @@ public class Main {
         Set<String> localVisitedLinks = new HashSet<>();
         try {
             String content = pageFetcher.fetchPageContent(url);
-            Set<String> links = extractLinks(baseUrl, content);
+            Set<String> links = extractLinks(baseUrl, url, content);
             List<CompletableFuture<Set<String>>> futures = new ArrayList<>();
 
             for (String link : links) {
@@ -112,16 +113,36 @@ public class Main {
         return sw.toString();
     }
 
-    private Set<String> extractLinks(String domain, String content) {
-        Set<String> links = new HashSet<>();
-        Pattern pattern = Pattern.compile("<a\\s+[^>]*?href=\"(https?://[^\"]+)\"", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(content);
+    private Set<String> extractLinks(String domain, String url, String content) {
 
-        while (matcher.find()) {
-            String link = matcher.group(1);
-            if (link.matches(".*\\.(jpg|jpeg|png|gif|pdf|mp4|zip|tar|exe|docx|download|upload)$")) continue;
-            if (link.contains(domain)) links.add(link);
+        Set<String> links = new HashSet<>();
+        Pattern pattern = Pattern.compile(
+                "<a\\s+[^>]*?href=\"(https?://[^\"]+|/[^\"]*|[^:\"][^\"]*)\"", // Added |/[^\"]* and |[^:\"][^\"]*
+                Pattern.CASE_INSENSITIVE
+        );
+        Matcher matcher = pattern.matcher(content);
+        String link = "";
+
+        try {
+            URI baseUri = new URI(url);
+            while (matcher.find()) {
+                link = matcher.group(1);
+
+                if (link.matches(".*(?:download|upload|git).*" + "|" +
+                        ".*\\.(?:jpe?g|png|gif|pdf|mp[34]|zip|tar|gz|rar|exe|dmg|iso|docx?|xlsx?|pptx?|avi|mov|wmv)$")) continue;
+
+                URI extractedUri = new URI(link);
+
+                URI resolvedUri = baseUri.resolve(extractedUri);
+
+                String fullUrlToCrawl = resolvedUri.toString();
+
+                if (fullUrlToCrawl.contains(domain)) links.add(fullUrlToCrawl);
+            }
+        } catch (URISyntaxException e) {
+            if (debugMode) System.err.println("Invalid Url to crawl: " + link + "\nException: " + getFullErrorMessage(e));
         }
+
         return links;
     }
 
