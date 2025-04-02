@@ -5,11 +5,17 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class CrawlerTest {
+
     @Test
-    void testCrawlPageShouldIgnoreExternalLinks() {
-        Main.PageFetcher mockFetcher = url -> """
+    void testCrawlPageShouldIgnoreExternalLinks() throws Exception {
+
+        Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
+        when(mockFetcher.fetchPageContent(anyString())).thenReturn("""
                 <html>
                 <body>
                 <a class="some_class "href="https://example.com/page1">Page 1</a>
@@ -17,7 +23,7 @@ class CrawlerTest {
                 <a href="https://external.com/page3">External Link</a>
                 </body>
                 </html>
-                """;
+                """);
 
         Main crawler = new Main(mockFetcher);
 
@@ -33,26 +39,24 @@ class CrawlerTest {
     }
 
     @Test
-    void testCrawlPageWithMultipleSubpages() {
-        Main.PageFetcher mockFetcher = url -> switch (url) {
-            case "https://example.com" -> """
-                    <html><body>
-                    <a href="https://example.com/page1">Page 1</a>
-                    <a href="https://example.com/page2">Page 2</a>
-                    </body></html>
-                    """;
-            case "https://example.com/page1" -> """
-                    <html><body>
-                    <a href="https://example.com/page3">Page 3</a>
-                    </body></html>
-                    """;
-            case "https://example.com/page2" -> """
-                    <html><body>
-                    <a href="https://example.com/page4">Page 4</a>
-                    </body></html>
-                    """;
-            default -> "";
-        };
+    void testCrawlPageWithMultipleSubpages() throws Exception {
+        Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
+        when(mockFetcher.fetchPageContent("https://example.com")).thenReturn("""
+                <html><body>
+                <a href="https://example.com/page1">Page 1</a>
+                <a href="https://example.com/page2">Page 2</a>
+                </body></html>
+                """);
+        when(mockFetcher.fetchPageContent("https://example.com/page1")).thenReturn("""
+                <html><body>
+                <a href="https://example.com/page3">Page 3</a>
+                </body></html>
+                """);
+        when(mockFetcher.fetchPageContent("https://example.com/page2")).thenReturn("""
+                <html><body>
+                <a href="https://example.com/page4">Page 4</a>
+                </body></html>
+                """);
 
         Main crawler = new Main(mockFetcher);
 
@@ -69,8 +73,10 @@ class CrawlerTest {
     }
 
     @Test
-    void testCollectLinksIncludesSubdomain() {
-        Main.PageFetcher mockFetcher = url -> """
+    void testCollectLinksIncludesSubdomain() throws Exception {
+        Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
+
+        when(mockFetcher.fetchPageContent(anyString())).thenReturn("""
                 <html>
                 <body>
                 <a href="https://orf.at/news">News</a>
@@ -78,7 +84,7 @@ class CrawlerTest {
                 <a href="https://external.com/page">External Link</a>
                 </body>
                 </html>
-                """;
+                """);
 
         Main crawler = new Main(mockFetcher);
 
@@ -93,8 +99,10 @@ class CrawlerTest {
     }
 
     @Test
-    void testCollectLinksExcludesMedia() {
-        Main.PageFetcher mockFetcher = url -> """
+    void testCollectLinksExcludesMedia() throws Exception {
+        Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
+
+        when(mockFetcher.fetchPageContent(anyString())).thenReturn("""
                 <html>
                 <body>
                 <a href="https://orf.at/news">News</a>
@@ -103,7 +111,7 @@ class CrawlerTest {
                 <a href="https://gitlab.com">Gitlab Link</a>
                 </body>
                 </html>
-                """;
+                """);
 
         Main crawler = new Main(mockFetcher);
 
@@ -115,15 +123,18 @@ class CrawlerTest {
     }
 
     @Test
-    void testCollectLinksIncludeRelativeUrl() {
-        Main.PageFetcher mockFetcher = url -> """
+    void testCollectLinksIncludeRelativeUrl() throws Exception {
+        Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
+
+        when(mockFetcher.fetchPageContent(anyString())).thenReturn("""
                 <html>
                 <body>
                 <a href="https://orf.at/news">News</a>
                 <a href="/doc/">External Link</a>
                 </body>
                 </html>
-                """;
+                """);
+
 
         Main crawler = new Main(mockFetcher);
 
