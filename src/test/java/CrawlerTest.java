@@ -1,5 +1,6 @@
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,22 +42,28 @@ class CrawlerTest {
     @Test
     void testCrawlPageWithMultipleSubpages() throws Exception {
         Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
-        when(mockFetcher.fetchPageContent("https://example.com")).thenReturn("""
-                <html><body>
-                <a href="https://example.com/page1">Page 1</a>
-                <a href="https://example.com/page2">Page 2</a>
-                </body></html>
-                """);
-        when(mockFetcher.fetchPageContent("https://example.com/page1")).thenReturn("""
-                <html><body>
-                <a href="https://example.com/page3">Page 3</a>
-                </body></html>
-                """);
-        when(mockFetcher.fetchPageContent("https://example.com/page2")).thenReturn("""
-                <html><body>
-                <a href="https://example.com/page4">Page 4</a>
-                </body></html>
-                """);
+
+        Map<String, String> mockResponses = Map.of(
+                "https://example.com", """
+                        <html><body>
+                        <a href="https://example.com/page1">Page 1</a>
+                        <a href="https://example.com/page2">Page 2</a>
+                        </body></html>
+                        """,
+                "https://example.com/page1", """
+                        <html><body>
+                        <a href="https://example.com/page3">Page 3</a>
+                        </body></html>
+                        """,
+                "https://example.com/page2", """
+                        <html><body>
+                        <a href="https://example.com/page4">Page 4</a>
+                        </body></html>
+                        """
+        );
+
+        when(mockFetcher.fetchPageContent(anyString()))
+                .thenAnswer(invocation -> mockResponses.getOrDefault((String) invocation.getArgument(0), "<html><body>404 Not Found</body></html>"));
 
         Main crawler = new Main(mockFetcher);
 
