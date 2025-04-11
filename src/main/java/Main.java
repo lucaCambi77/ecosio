@@ -25,7 +25,10 @@ public class Main {
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private final PageFetcher pageFetcher;
     private static final boolean debugMode = Boolean.getBoolean("debug");
-
+    private final Pattern pattern = Pattern.compile(
+            "<a\\s+[^>]*?href=\"(https?://[^\"]+|/[^\"]*|[^:\"][^\"]*)\"", // Added |/[^\"]* and |[^:\"][^\"]*
+            Pattern.CASE_INSENSITIVE
+    );
     public static void main(String[] args) {
         if (args.length == 0) {
             System.out.println("Usage: java Main <url>");
@@ -116,10 +119,7 @@ public class Main {
     private Set<String> extractLinks(String domain, String url, String content) {
 
         Set<String> links = new HashSet<>();
-        Pattern pattern = Pattern.compile(
-                "<a\\s+[^>]*?href=\"(https?://[^\"]+|/[^\"]*|[^:\"][^\"]*)\"", // Added |/[^\"]* and |[^:\"][^\"]*
-                Pattern.CASE_INSENSITIVE
-        );
+
         Matcher matcher = pattern.matcher(content);
         String link = "";
 

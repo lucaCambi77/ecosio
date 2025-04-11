@@ -1,4 +1,7 @@
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
 import java.util.Set;
@@ -7,15 +10,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class CrawlerTest {
+
+    @Mock
+    Main.PageFetcher mockFetcher;
 
     @Test
     void testCrawlPageShouldIgnoreExternalLinks() throws Exception {
-
-        Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
         when(mockFetcher.fetchPageContent(anyString())).thenReturn("""
                 <html>
                 <body>
@@ -41,8 +45,6 @@ class CrawlerTest {
 
     @Test
     void testCrawlPageWithMultipleSubpages() throws Exception {
-        Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
-
         Map<String, String> mockResponses = Map.of(
                 "https://example.com", """
                         <html><body>
@@ -81,8 +83,6 @@ class CrawlerTest {
 
     @Test
     void testCollectLinksIncludesSubdomain() throws Exception {
-        Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
-
         when(mockFetcher.fetchPageContent(anyString())).thenReturn("""
                 <html>
                 <body>
@@ -107,8 +107,6 @@ class CrawlerTest {
 
     @Test
     void testCollectLinksExcludesMedia() throws Exception {
-        Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
-
         when(mockFetcher.fetchPageContent(anyString())).thenReturn("""
                 <html>
                 <body>
@@ -131,8 +129,6 @@ class CrawlerTest {
 
     @Test
     void testCollectLinksIncludeRelativeUrl() throws Exception {
-        Main.PageFetcher mockFetcher = mock(Main.PageFetcher.class);
-
         when(mockFetcher.fetchPageContent(anyString())).thenReturn("""
                 <html>
                 <body>
